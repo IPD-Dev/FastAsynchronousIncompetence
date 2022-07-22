@@ -19,6 +19,7 @@
 
 package com.sk89q.worldedit.math;
 
+import com.fastasynchronousincompetence.core.SanityChecks;
 import com.fastasyncworldedit.core.math.MutableVector3;
 import com.fastasyncworldedit.core.math.Vector3Impl;
 import com.fastasyncworldedit.core.util.MathMan;
@@ -61,7 +62,9 @@ public abstract class Vector3 {
         }
         Fawe end
         */
-        return new Vector3Impl(x, y, z);
+        final double[] saneCoords = SanityChecks.getSane(x, y, z);
+
+        return new Vector3Impl(saneCoords[0], saneCoords[1], saneCoords[2]);
     }
 
     // thread-safe initialization idiom
