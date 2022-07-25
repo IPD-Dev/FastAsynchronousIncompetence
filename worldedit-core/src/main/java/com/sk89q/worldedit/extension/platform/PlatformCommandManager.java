@@ -65,8 +65,6 @@ import com.sk89q.worldedit.command.RegionCommands;
 import com.sk89q.worldedit.command.RegionCommandsRegistration;
 import com.sk89q.worldedit.command.SchematicCommands;
 import com.sk89q.worldedit.command.SchematicCommandsRegistration;
-import com.sk89q.worldedit.command.ScriptingCommands;
-import com.sk89q.worldedit.command.ScriptingCommandsRegistration;
 import com.sk89q.worldedit.command.SelectionCommands;
 import com.sk89q.worldedit.command.SelectionCommandsRegistration;
 import com.sk89q.worldedit.command.SnapshotCommands;
@@ -152,7 +150,6 @@ import org.enginehub.piston.inject.MemoizingValueAccess;
 import org.enginehub.piston.inject.MergedValueAccess;
 import org.enginehub.piston.part.SubCommandPart;
 import org.enginehub.piston.suggestion.Suggestion;
-import org.enginehub.piston.util.HelpGenerator;
 import org.enginehub.piston.util.ValueProvider;
 
 import javax.annotation.Nonnull;
@@ -558,11 +555,6 @@ public final class PlatformCommandManager {
                     commandManager,
                     RegionCommandsRegistration.builder(),
                     new RegionCommands()
-            );
-            this.registration.register(
-                    commandManager,
-                    ScriptingCommandsRegistration.builder(),
-                    new ScriptingCommands(worldEdit)
             );
             this.registration.register(
                     commandManager,

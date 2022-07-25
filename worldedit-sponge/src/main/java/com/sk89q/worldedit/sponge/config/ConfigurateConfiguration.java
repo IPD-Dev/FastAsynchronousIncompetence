@@ -110,9 +110,6 @@ public class ConfigurateConfiguration extends LocalConfiguration {
         navigationWandMaxDistance = node.getNode("navigation-wand", "max-distance").getInt(navigationWandMaxDistance);
         navigationUseGlass = node.getNode("navigation", "use-glass").getBoolean(navigationUseGlass);
 
-        scriptTimeout = node.getNode("scripting", "timeout").getInt(scriptTimeout);
-        scriptsDir = node.getNode("scripting", "dir").getString(scriptsDir);
-
         saveDir = node.getNode("saving", "dir").getString(saveDir);
 
         allowSymlinks = node.getNode("files", "allow-symbolic-links").getBoolean(false);

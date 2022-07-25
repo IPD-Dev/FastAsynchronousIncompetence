@@ -84,12 +84,10 @@ public abstract class LocalConfiguration {
     public boolean navigationUseGlass = true;
     public String navigationWand = "minecraft:compass";
     public int navigationWandMaxDistance = 50;
-    public int scriptTimeout = 3000;
     public int calculationTimeout = 100;
     public int maxCalculationTimeout = 300;
     public Set<String> allowedDataCycleBlocks = new HashSet<>();
     public String saveDir = "schematics";
-    public String scriptsDir = "craftscripts";
     public boolean showHelpInfo = true; // unused
     public int butcherDefaultRadius = -1;
     public int butcherMaxRadius = -1;

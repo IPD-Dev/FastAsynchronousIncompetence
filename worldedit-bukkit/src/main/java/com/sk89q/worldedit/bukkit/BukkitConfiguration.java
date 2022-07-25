@@ -59,7 +59,6 @@ public class BukkitConfiguration extends YAMLConfiguration {
     }
 
     private void migrateLegacyFolders() {
-        migrate(scriptsDir, "craftscripts");
         migrate(saveDir, "schematics");
         migrate("drawings", "draw.js images");
     }

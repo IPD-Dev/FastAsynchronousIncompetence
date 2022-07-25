@@ -66,10 +66,6 @@ navigation-wand:
   item: minecraft:compass
   max-distance: 100
 
-scripting:
-  timeout: 3000
-  dir: craftscripts
-
 saving:
   dir: schematics
 
