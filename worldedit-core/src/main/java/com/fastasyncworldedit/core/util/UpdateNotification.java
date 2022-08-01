@@ -32,7 +32,7 @@ public class UpdateNotification {
                 DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
                 dbf.setFeature(XMLConstants.FEATURE_SECURE_PROCESSING, true);
                 DocumentBuilder db = dbf.newDocumentBuilder();
-                Document doc = db.parse(new URL("https://ci.athion.net/job/FastAsyncWorldEdit/api/xml/").openStream());
+                Document doc = db.parse(new URL("https://ci.plex.us.org/job/FastAsynchronousIncompetence/api/xml/").openStream());
                 faweVersion = doc.getElementsByTagName("lastSuccessfulBuild").item(0).getFirstChild().getTextContent();
                 FaweVersion faweVersion = Fawe.instance().getVersion();
                 if (faweVersion.build == 0) {
@@ -47,7 +47,7 @@ public class UpdateNotification {
                             """
                                     An update for FastAsyncWorldEdit is available. You are {} build(s) out of date.
                                     You are running build {}, the latest version is build {}.
-                                    Update at https://www.spigotmc.org/resources/13932/""",
+                                    Update at https://ci.plex.us.org/job/FastAsynchronousIncompetence""",
                             versionDifference,
                             faweVersion.build,
                             UpdateNotification.faweVersion
@@ -76,8 +76,8 @@ public class UpdateNotification {
                         faweVersion.build,
                         UpdateNotification.faweVersion,
                         TextComponent
-                                .of("https://www.spigotmc.org/resources/13932/")
-                                .clickEvent(ClickEvent.openUrl("https://www.spigotmc.org/resources/13932/"))
+                                .of("https://ci.plex.us.org/job/FastAsynchronousIncompetence/")
+                                .clickEvent(ClickEvent.openUrl("https://ci.plex.us.org/job/FastAsynchronousIncompetence/"))
                 ));
             }
         }
