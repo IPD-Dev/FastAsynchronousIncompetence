@@ -190,7 +190,6 @@ public class RegionCommands {
         }
     }
 
-
     @Deprecated(since = "2.4.2", forRemoval = true)
     @Command(
             name = "/setblocklight",
