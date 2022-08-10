@@ -75,6 +75,9 @@ import org.apache.logging.log4j.Logger;
 import javax.annotation.Nullable;
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Iterator;
@@ -358,7 +361,7 @@ public final class WorldEdit {
             }
 
             return filePath.toFile();
-        } catch (IOException e) {
+        } catch (IOException | InvalidPathException e) {
             throw new FilenameResolutionException(filename, Caption.of("worldedit.error.file-resolution.resolve-failed"));
         }
     }
@@ -591,7 +594,12 @@ public final class WorldEdit {
 
             case "b":
             case "back":
-                return getDirectionRelative(player, 180);
+                Direction dir = getDirectionRelative(player, 180);
+                if (dir.isUpright()) {
+                    // If this is an upright direction, flip it.
+                    dir = dir == Direction.UP ? Direction.DOWN : Direction.UP;
+                }
+                return dir;
 
             case "l":
             case "left":
