@@ -6,7 +6,7 @@ import java.net.URI
 
 plugins {
     id("io.github.gradle-nexus.publish-plugin") version "1.1.0"
-    id("xyz.jpenilla.run-paper") version "2.0.0"
+    id("xyz.jpenilla.run-paper") version "2.0.1"
 }
 
 logger.lifecycle("""
@@ -23,7 +23,7 @@ logger.lifecycle("""
 *******************************************
 """)
 
-var rootVersion by extra("2.4.11")
+var rootVersion by extra("2.5.1")
 var snapshot by extra("SNAPSHOT")
 var revision: String by extra("")
 var buildNumber by extra("")

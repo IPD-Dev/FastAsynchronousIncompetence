@@ -1,4 +1,4 @@
-package com.sk89q.worldedit.bukkit.adapter.impl.fawe.v1_18_R2;
+package com.sk89q.worldedit.bukkit.adapter.impl.fawe.v1_19_R2;
 
 import com.fastasyncworldedit.bukkit.adapter.CachedBukkitAdapter;
 import com.fastasyncworldedit.bukkit.adapter.IDelegateBukkitImplAdapter;
@@ -21,9 +21,9 @@ import com.sk89q.worldedit.blocks.TileEntityBlock;
 import com.sk89q.worldedit.bukkit.BukkitAdapter;
 import com.sk89q.worldedit.bukkit.BukkitWorld;
 import com.sk89q.worldedit.bukkit.adapter.BukkitImplAdapter;
-import com.sk89q.worldedit.bukkit.adapter.ext.fawe.v1_18_R2.PaperweightAdapter;
-import com.sk89q.worldedit.bukkit.adapter.impl.fawe.v1_18_R2.nbt.PaperweightLazyCompoundTag;
-import com.sk89q.worldedit.bukkit.adapter.impl.fawe.v1_18_R2.regen.PaperweightRegen;
+import com.sk89q.worldedit.bukkit.adapter.ext.fawe.v1_19_R2.PaperweightAdapter;
+import com.sk89q.worldedit.bukkit.adapter.impl.fawe.v1_19_R2.nbt.PaperweightLazyCompoundTag;
+import com.sk89q.worldedit.bukkit.adapter.impl.fawe.v1_19_R2.regen.PaperweightRegen;
 import com.sk89q.worldedit.entity.BaseEntity;
 import com.sk89q.worldedit.extent.Extent;
 import com.sk89q.worldedit.internal.block.BlockStateIdAccess;
@@ -59,10 +59,12 @@ import io.papermc.lib.PaperLib;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Registry;
 import net.minecraft.core.WritableRegistry;
+import net.minecraft.core.registries.Registries;
 import net.minecraft.nbt.IntTag;
 import net.minecraft.network.protocol.game.ClientboundLevelChunkWithLightPacket;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.MinecraftServer;
+import net.minecraft.server.dedicated.DedicatedServer;
 import net.minecraft.server.level.ChunkHolder;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
@@ -84,20 +86,22 @@ import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
 import org.bukkit.TreeType;
 import org.bukkit.block.data.BlockData;
-import org.bukkit.craftbukkit.v1_18_R2.CraftChunk;
-import org.bukkit.craftbukkit.v1_18_R2.CraftServer;
-import org.bukkit.craftbukkit.v1_18_R2.CraftWorld;
-import org.bukkit.craftbukkit.v1_18_R2.block.CraftBlockState;
-import org.bukkit.craftbukkit.v1_18_R2.block.data.CraftBlockData;
-import org.bukkit.craftbukkit.v1_18_R2.entity.CraftEntity;
-import org.bukkit.craftbukkit.v1_18_R2.entity.CraftPlayer;
-import org.bukkit.craftbukkit.v1_18_R2.inventory.CraftItemStack;
-import org.bukkit.craftbukkit.v1_18_R2.util.CraftNamespacedKey;
+import org.bukkit.craftbukkit.v1_19_R2.CraftChunk;
+import org.bukkit.craftbukkit.v1_19_R2.CraftServer;
+import org.bukkit.craftbukkit.v1_19_R2.CraftWorld;
+import org.bukkit.craftbukkit.v1_19_R2.block.CraftBlockState;
+import org.bukkit.craftbukkit.v1_19_R2.block.data.CraftBlockData;
+import org.bukkit.craftbukkit.v1_19_R2.entity.CraftEntity;
+import org.bukkit.craftbukkit.v1_19_R2.entity.CraftPlayer;
+import org.bukkit.craftbukkit.v1_19_R2.inventory.CraftItemStack;
+import org.bukkit.craftbukkit.v1_19_R2.util.CraftNamespacedKey;
 import org.bukkit.entity.Player;
 
 import javax.annotation.Nullable;
 import java.lang.ref.WeakReference;
 import java.lang.reflect.Field;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -111,10 +115,20 @@ import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import static net.minecraft.core.registries.Registries.BIOME;
+
 public final class PaperweightFaweAdapter extends CachedBukkitAdapter implements
         IDelegateBukkitImplAdapter<net.minecraft.nbt.Tag> {
 
     private static final Logger LOGGER = LogManagerCompat.getLogger();
+    private static Method CHUNK_HOLDER_WAS_ACCESSIBLE_SINCE_LAST_SAVE;
+
+    static {
+        try {
+            CHUNK_HOLDER_WAS_ACCESSIBLE_SINCE_LAST_SAVE = ChunkHolder.class.getDeclaredMethod("wasAccessibleSinceLastSave");
+        } catch (NoSuchMethodException ignored) { // may not be present in newer paper versions
+        }
+    }
 
     private final PaperweightAdapter parent;
     // ------------------------------------------------------------------------
@@ -231,7 +245,8 @@ public final class PaperweightFaweAdapter extends CachedBukkitAdapter implements
     }
 
     public Block getBlock(BlockType blockType) {
-        return Registry.BLOCK.get(new ResourceLocation(blockType.getNamespace(), blockType.getResource()));
+        return DedicatedServer.getServer().registryAccess().registryOrThrow(Registries.BLOCK)
+                .get(new ResourceLocation(blockType.getNamespace(), blockType.getResource()));
     }
 
     @Deprecated
@@ -491,7 +506,8 @@ public final class PaperweightFaweAdapter extends CachedBukkitAdapter implements
     public void sendFakeChunk(org.bukkit.World world, Player player, ChunkPacket chunkPacket) {
         ServerLevel nmsWorld = ((CraftWorld) world).getHandle();
         ChunkHolder map = PaperweightPlatformAdapter.getPlayerChunk(nmsWorld, chunkPacket.getChunkX(), chunkPacket.getChunkZ());
-        if (map != null && map.wasAccessibleSinceLastSave()) {
+        if (map != null && wasAccessibleSinceLastSave(map)) {
+            boolean flag = false;
             // PlayerChunk.d players = map.players;
             Stream<ServerPlayer> stream = /*players.a(new ChunkCoordIntPair(packet.getChunkX(), packet.getChunkZ()), flag)
              */ Stream.empty();
@@ -534,7 +550,8 @@ public final class PaperweightFaweAdapter extends CachedBukkitAdapter implements
     @Override
     public org.bukkit.inventory.ItemStack adapt(BaseItemStack baseItemStack) {
         ItemStack stack = new ItemStack(
-                Registry.ITEM.get(ResourceLocation.tryParse(baseItemStack.getType().getId())),
+                DedicatedServer.getServer().registryAccess().registryOrThrow(Registries.ITEM)
+                        .get(ResourceLocation.tryParse(baseItemStack.getType().getId())),
                 baseItemStack.getAmount()
         );
         stack.setTag(((net.minecraft.nbt.CompoundTag) fromNative(baseItemStack.getNbtData())));
@@ -586,23 +603,6 @@ public final class PaperweightFaweAdapter extends CachedBukkitAdapter implements
     }
 
     @Override
-    public List<org.bukkit.entity.Entity> getEntities(org.bukkit.World world) {
-        // Quickly add each entity to a list copy.
-        List<Entity> mcEntities = new ArrayList<>();
-        ((CraftWorld) world).getHandle().entityManager.getEntityGetter().getAll().forEach(mcEntities::add);
-
-        List<org.bukkit.entity.Entity> list = new ArrayList<>();
-        mcEntities.forEach((mcEnt) -> {
-            org.bukkit.entity.Entity bukkitEntity = mcEnt.getBukkitEntity();
-            if (bukkitEntity.isValid()) {
-                list.add(bukkitEntity);
-            }
-
-        });
-        return list;
-    }
-
-    @Override
     public BaseItemStack adapt(org.bukkit.inventory.ItemStack itemStack) {
         final ItemStack nmsStack = CraftItemStack.asNMSCopy(itemStack);
         final BaseItemStack weStack = new BaseItemStack(BukkitAdapter.asItemType(itemStack.getType()), itemStack.getAmount());
@@ -616,16 +616,11 @@ public final class PaperweightFaweAdapter extends CachedBukkitAdapter implements
     }
 
     @Override
-    public BinaryTag toNativeBinary(final net.minecraft.nbt.Tag foreign) {
-        return parent.toNativeBinary(foreign);
-    }
-
-    @Override
     public net.minecraft.nbt.Tag fromNative(Tag foreign) {
         if (foreign instanceof PaperweightLazyCompoundTag) {
             return ((PaperweightLazyCompoundTag) foreign).get();
         }
-        return (net.minecraft.nbt.Tag) parent.fromNative(foreign);
+        return parent.fromNative(foreign);
     }
 
     @Override
@@ -643,7 +638,7 @@ public final class PaperweightFaweAdapter extends CachedBukkitAdapter implements
         final Registry<Biome> registry = MinecraftServer
                 .getServer()
                 .registryAccess()
-                .ownedRegistryOrThrow(Registry.BIOME_REGISTRY);
+                .registryOrThrow(BIOME);
         ResourceLocation resourceLocation = ResourceLocation.tryParse(biomeType.getId());
         Biome biome = registry.get(resourceLocation);
         return registry.getId(biome);
@@ -654,8 +649,7 @@ public final class PaperweightFaweAdapter extends CachedBukkitAdapter implements
         WritableRegistry<Biome> biomeRegistry = (WritableRegistry<Biome>) ((CraftServer) Bukkit.getServer())
                 .getServer()
                 .registryAccess()
-                .ownedRegistryOrThrow(
-                        Registry.BIOME_REGISTRY);
+                .registryOrThrow(BIOME);
         return biomeRegistry.stream()
                 .map(biomeRegistry::getKey).filter(Objects::nonNull)
                 .map(CraftNamespacedKey::fromMinecraft)
@@ -688,6 +682,18 @@ public final class PaperweightFaweAdapter extends CachedBukkitAdapter implements
     @Override
     public IBatchProcessor getTickingPostProcessor() {
         return new PaperweightPostProcessor();
+    }
+
+    private boolean wasAccessibleSinceLastSave(ChunkHolder holder) {
+        if (!PaperLib.isPaper() || !PaperweightPlatformAdapter.POST_CHUNK_REWRITE) {
+            try {
+                return (boolean) CHUNK_HOLDER_WAS_ACCESSIBLE_SINCE_LAST_SAVE.invoke(holder);
+            } catch (IllegalAccessException | InvocationTargetException ignored) {
+                // fall-through
+            }
+        }
+        // Papers new chunk system has no related replacement - therefor we assume true.
+        return true;
     }
 
 }
